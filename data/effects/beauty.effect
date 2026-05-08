@@ -1,0 +1,135 @@
+uniform float4x4 ViewProj;
+uniform texture2d image;
+
+uniform float smoothness;
+uniform float brightness;
+uniform float blend;
+uniform float saturation;
+uniform float compare_pos;
+
+sampler_state texSampler {
+    Filter   = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+struct VertData {
+    float4 pos : POSITION;
+    float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in)
+{
+    VertData vert_out;
+    vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+    vert_out.uv  = v_in.uv;
+    return vert_out;
+}
+
+// RGB -> YCbCr (normalized 0-1)
+float3 rgb2ycbcr(float3 c)
+{
+    float Y  =  0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
+    float Cb = -0.169 * c.r - 0.331 * c.g + 0.500 * c.b + 0.5;
+    float Cr =  0.500 * c.r - 0.419 * c.g - 0.081 * c.b + 0.5;
+    return float3(Y, Cb, Cr);
+}
+
+// Skin detection using YCbCr ranges
+float skinMask(float3 rgb)
+{
+    float3 ycbcr = rgb2ycbcr(rgb);
+    float Y  = ycbcr.x;
+    float Cb = ycbcr.y;
+    float Cr = ycbcr.z;
+
+    float inRange = step(0.10, Y)
+                  * step(Cb, 0.50) * step(0.30, Cb)
+                  * step(Cr, 0.68) * step(0.52, Cr);
+
+    // Soft edge via smoothstep on Cb/Cr center distance
+    float dCb = abs(Cb - 0.40) / 0.10;
+    float dCr = abs(Cr - 0.60) / 0.08;
+    float soft = smoothstep(1.0, 0.5, max(dCb, dCr));
+
+    return inRange * soft;
+}
+
+// Approximated bilateral filter: Gaussian spatial weights + color similarity
+float3 bilateralSmooth(float2 uv, float2 texelSize, float radius, float3 center)
+{
+    float3 sum    = float3(0.0, 0.0, 0.0);
+    float  wTotal = 0.0;
+    float  sigma  = radius * 0.5;
+    float  colorSigma = 0.15;
+
+    for (int dy = -3; dy <= 3; dy++) {
+        for (int dx = -3; dx <= 3; dx++) {
+            float2 offset   = float2(float(dx), float(dy)) * texelSize * radius;
+            float3 neighbor = image.Sample(texSampler, uv + offset).rgb;
+
+            float spatialW  = exp(-float(dx*dx + dy*dy) / (2.0 * sigma * sigma));
+            float colorDiff = length(neighbor - center);
+            float colorW    = exp(-(colorDiff * colorDiff) / (2.0 * colorSigma * colorSigma));
+
+            float w = spatialW * colorW;
+            sum    += neighbor * w;
+            wTotal += w;
+        }
+    }
+    return sum / wTotal;
+}
+
+// Adjust saturation
+float3 adjustSaturation(float3 c, float sat)
+{
+    float gray = dot(c, float3(0.299, 0.587, 0.114));
+    return lerp(float3(gray, gray, gray), c, sat);
+}
+
+float4 PSBeauty(VertData v_in) : TARGET
+{
+    float2 uv = v_in.uv;
+
+    // Before/After compare: left half = original, right half = filtered
+    bool inCompareZone = (compare_pos < 1.0) && (uv.x < compare_pos);
+
+    float4 original = image.Sample(texSampler, uv);
+
+    if (inCompareZone) {
+        return original;
+    }
+
+    // Estimate texel size from derivative (works without passing resolution uniform)
+    float2 texelSize = float2(ddx(uv.x), ddy(uv.y));
+    if (texelSize.x < 0.0) texelSize.x = -texelSize.x;
+    if (texelSize.y < 0.0) texelSize.y = -texelSize.y;
+
+    float3 col   = original.rgb;
+    float  mask  = skinMask(col);
+    float  radius = lerp(0.5, 4.0, smoothness);
+
+    float3 smoothed = bilateralSmooth(uv, texelSize, radius, col);
+
+    // Blend smoothed result only on skin areas
+    float3 result = lerp(col, smoothed, mask * blend);
+
+    // Brightness
+    result = result + brightness;
+
+    // Saturation
+    result = adjustSaturation(result, saturation);
+
+    result = clamp(result, 0.0, 1.0);
+
+    return float4(result, original.a);
+}
+
+technique Draw
+{
+    pass
+    {
+        vertex_shader = VSDefault(v_in);
+        pixel_shader  = PSBeauty(v_in);
+    }
+}
