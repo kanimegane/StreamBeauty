@@ -1,59 +1,83 @@
-# OBS Plugin Template
+# StreamBeauty
 
-## Introduction
+OBS Studio 向けリアルタイム美肌フィルタープラグインです。  
+そばかす・ニキビ跡・肌荒れを目立たなくし、配信映像の肌を自然に整えます。  
+GPU（GLSL シェーダー）で処理するためCPU負荷が低く、ゲーム配信との同時使用にも対応しています。
 
-The plugin template is meant to be used as a starting point for OBS Studio plugin development. It includes:
+---
 
-* Boilerplate plugin source code
-* A CMake project file
-* GitHub Actions workflows and repository actions
+## 機能
 
-## Supported Build Environments
+- **肌スムージング** — YCbCr 色空間による肌領域検出 + バイラテラルフィルター近似
+- **明るさ調整** — 肌の透明感を底上げ
+- **ブレンド率** — フィルターの強さを全体的にコントロール
+- **彩度調整** — 血色感の微調整
+- **ビフォーアフター比較** — 画面を左右に分割してフィルター効果を確認
 
-| Platform  | Tool   |
-|-----------|--------|
-| Windows   | Visual Studio 17 2022 |
-| macOS     | XCode 16.0 |
-| Windows, macOS  | CMake 3.30.5 |
-| Ubuntu 24.04 | CMake 3.28.3 |
-| Ubuntu 24.04 | `ninja-build` |
-| Ubuntu 24.04 | `pkg-config`
-| Ubuntu 24.04 | `build-essential` |
+---
 
-## Quick Start
+## 動作環境
 
-An absolute bare-bones [Quick Start Guide](https://github.com/obsproject/obs-plugintemplate/wiki/Quick-Start-Guide) is available in the wiki.
+- **OS**: Windows 10 / 11（64bit）
+- **OBS Studio**: 30.0 以上
 
-## Documentation
+---
 
-All documentation can be found in the [Plugin Template Wiki](https://github.com/obsproject/obs-plugintemplate/wiki).
+## インストール方法
 
-Suggested reading to get up and running:
+1. [Releases](https://github.com/kanimegane/StreamBeauty/releases) から最新の `stream-beauty.dll` と `stream-beauty`フォルダをダウンロード
+2. 以下の場所にコピー（管理者権限が必要な場合があります）
 
-* [Getting started](https://github.com/obsproject/obs-plugintemplate/wiki/Getting-Started)
-* [Build system requirements](https://github.com/obsproject/obs-plugintemplate/wiki/Build-System-Requirements)
-* [Build system options](https://github.com/obsproject/obs-plugintemplate/wiki/CMake-Build-System-Options)
+| ファイル | コピー先 |
+|----------|----------|
+| `stream-beauty.dll` | `C:\Program Files\obs-studio\obs-plugins\64bit\` |
+| `stream-beauty\`フォルダ | `C:\Program Files\obs-studio\data\obs-plugins\` |
 
-## GitHub Actions & CI
+3. OBS Studio を再起動
 
-Default GitHub Actions workflows are available for the following repository actions:
+---
 
-* `push`: Run for commits or tags pushed to `master` or `main` branches.
-* `pr-pull`: Run when a Pull Request has been pushed or synchronized.
-* `dispatch`: Run when triggered by the workflow dispatch in GitHub's user interface.
-* `build-project`: Builds the actual project and is triggered by other workflows.
-* `check-format`: Checks CMake and plugin source code formatting and is triggered by other workflows.
+## 使い方
 
-The workflows make use of GitHub repository actions (contained in `.github/actions`) and build scripts (contained in `.github/scripts`) which are not needed for local development, but might need to be adjusted if additional/different steps are required to build the plugin.
+1. OBS Studio でカメラソース（映像キャプチャデバイス）を右クリック
+2. **「フィルタ」** を選択
+3. 左下の **「＋」** → **「エフェクトフィルタ」** → **「StreamBeauty Skin Filter」** を追加
+4. スライダーで効果を調整
 
-### Retrieving build artifacts
+### パラメーター
 
-Successful builds on GitHub Actions will produce build artifacts that can be downloaded for testing. These artifacts are commonly simple archives and will not contain package installers or installation programs.
+| パラメーター | 説明 | デフォルト |
+|-------------|------|-----------|
+| Smoothness | 肌のなめらかさ（高いほど強くかかる） | 0.60 |
+| Brightness | 明るさの補正 | 0.05 |
+| Blend | フィルター全体の強さ | 0.80 |
+| Saturation | 彩度（1.0が元の色、上げると血色感アップ） | 1.10 |
+| Before/After Compare | チェックで左半分を元映像・右半分をフィルター適用後に分割表示 | OFF |
 
-### Building a Release
+---
 
-To create a release, an appropriately named tag needs to be pushed to the `main`/`master` branch using semantic versioning (e.g., `12.3.4`, `23.4.5-beta2`). A draft release will be created on the associated repository with generated installer packages or installation programs attached as release artifacts.
+## 自分でビルドする場合
 
-## Signing and Notarizing on macOS
+### 必要なもの
 
-Basic concepts of codesigning and notarization on macOS are explained in the correspodning [Wiki article](https://github.com/obsproject/obs-plugintemplate/wiki/Codesigning-On-macOS) which has a specific section for the [GitHub Actions setup](https://github.com/obsproject/obs-plugintemplate/wiki/Codesigning-On-macOS#setting-up-code-signing-for-github-actions).
+- Visual Studio 2022 以上（C++によるデスクトップ開発）
+- CMake 3.28 以上
+- Git
+
+### 手順
+
+```bash
+git clone --recursive https://github.com/kanimegane/StreamBeauty.git
+cd StreamBeauty
+cmake --preset windows-x64
+cmake --build --preset windows-x64
+```
+
+ビルド後、`build_x64/RelWithDebInfo/stream-beauty.dll` と `build_x64/rundir/RelWithDebInfo/stream-beauty/` を上記のインストール先にコピーしてください。
+
+---
+
+## ライセンス
+
+[GPL-2.0](LICENSE)  
+OBS Plugin Template をベースに開発しています。
