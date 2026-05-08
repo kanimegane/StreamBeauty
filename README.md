@@ -39,6 +39,18 @@ GPU（GLSL シェーダー）で処理するためCPU負荷が低く、ゲーム
 
 ---
 
+## アンインストール方法
+
+1. OBS Studio を終了
+2. 以下のファイル・フォルダを削除
+
+| 削除対象 | 場所 |
+|----------|------|
+| `stream-beauty.dll` | `C:\Program Files\obs-studio\obs-plugins\64bit\` |
+| `stream-beauty\`フォルダ | `C:\Program Files\obs-studio\data\obs-plugins\` |
+
+---
+
 ## 使い方
 
 1. OBS Studio でカメラソース（映像キャプチャデバイス）を右クリック
