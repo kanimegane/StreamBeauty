@@ -25,13 +25,15 @@ GPU（GLSL シェーダー）で処理するためCPU負荷が低く、ゲーム
 
 ## インストール方法
 
-1. [Releases](https://github.com/kanimegane/StreamBeauty/releases) から最新の `stream-beauty.dll` と `stream-beauty`フォルダをダウンロード
+1. [Releases](https://github.com/kanimegane/StreamBeauty/releases) から最新の以下2ファイルをダウンロード
+   - `stream-beauty.dll`
+   - `stream-beauty-data.zip`
 2. 以下の場所にコピー（管理者権限が必要な場合があります）
 
 | ファイル | コピー先 |
 |----------|----------|
 | `stream-beauty.dll` | `C:\Program Files\obs-studio\obs-plugins\64bit\` |
-| `stream-beauty\`フォルダ | `C:\Program Files\obs-studio\data\obs-plugins\` |
+| `stream-beauty-data.zip` を展開した `stream-beauty\`フォルダ | `C:\Program Files\obs-studio\data\obs-plugins\` |
 
 3. OBS Studio を再起動
 
